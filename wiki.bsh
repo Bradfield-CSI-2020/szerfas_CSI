@@ -6,3 +6,15 @@ echo "Hello, you've started a min wiki scraper that will return the first line o
 
 curl -s "https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&explaintext=1&titles=$TITLE" | jq '.query.pages[].extract' | cut -d '.' -f -1 | cut -c 2-
 curl -s "https://en.wikipedia.org/wiki/$TITLE" 2>&1 | grep toclevel-1 | cut -d '#' -f 2- | cut -d '"' -f -1
+
+function scrape_wiki {
+	curl -s "https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&explaintext=1&titles=$1" | jq '.query.pages[].extract' | cut -d '.' -f -1 | cut -c 2-
+	curl -s "https://en.wikipedia.org/wiki/$1" 2>&1 | grep toclevel-1 | cut -d '#' -f 2- | cut -d '"' -f -1
+}
+
+echo 'trying extra args'
+for ARG in $@; do
+	echo $ARG
+	scrape_wiki $ARG
+done
+ 
