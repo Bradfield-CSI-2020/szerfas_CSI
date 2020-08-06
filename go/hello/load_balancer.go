@@ -6,63 +6,8 @@ import (
 	"time"
 )
 
-const num_workers int64 = 4
-
-type Request struct {
-	fn func() int // a function to illustrate some work to be done
-	response chan int // a channel to return the result
-	id int
-}
-
-func requester(work chan<- Request, i int) {
-	c := make(chan int)
-	fmt.Printf("requester %v preparing request\n", i)
-	time.Sleep(time.Duration(rand.Int63n(500)) * time.Millisecond)
-	fmt.Printf("requester %v sending request\n", i)
-	work <- Request{workFunc, c, i}
-	<-c
-	fmt.Printf("requester %v received response\n", i)
-}
-
-func workFunc() int {
-	fmt.Printf("executing workFunc\n")
-	time.Sleep(time.Duration(rand.Intn(2)) * time.Second)
-	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(10)
-}
-
-type Worker struct {
-	work <-chan Request
-
-	done chan bool
-}
-
-func worker(work <-chan Request, i int) {
-	for {
-		request := <-work
-		fmt.Printf("worker %v received work with request_id %v\n", i, request.id)
-		request.response <- request.fn()
-		fmt.Printf("worker %v sent response for request_id %v\n", i, request.id)
-	}
-}
-
-/*func main() {
-	fmt.Println("Hello, world.")
-	fmt.Println(cmp.Diff("Hello World", "Hello Go"))
-	work_channel := make(chan Request)
-	for i := 0; i < 5; i++ {
-		go worker(work_channel, i)
-	}
-	fmt.Println("Workers created\n")
-	for i := 0; i < 50; i++ {
-		go requester(work_channel, i)
-	}
-	fmt.Print("Requesters created\n")
-	timeout := time.After(10 * time.Second)
-	<-timeout
-}*/
-
-/*Architecture
+/*
+Architecture
 	load balancer {pool of workers}
 		maintains workers in a heap
 		select statement for incoming requests
@@ -73,7 +18,10 @@ func worker(work <-chan Request, i int) {
 main
 	workers created
 	load balancer created
-	loops through and calls requests*/
+	loops through and calls requests
+*/
+
+const num_workers int64 = 4
 
 func main() {
 	worker_pool := PriorityQueue(make([]*Worker2, num_workers))
@@ -102,17 +50,28 @@ func main() {
 	fmt.Printf("got to end of main\n")
 }
 
-type Worker1 struct {
-	request_channel chan Request
-	pending int
-	done_channel chan *Worker1
+
+type Request struct {
+	fn func() int // a function to illustrate some work to be done
+	response chan int // a channel to return the result
+	id int
 }
 
-func (w *Worker2) DoWork() {
-	for {
-		request := <-w.request_channel
-		request.response <-request.fn()
-	}
+func requester(work chan<- Request, i int) {
+	c := make(chan int)
+	fmt.Printf("requester %v preparing request\n", i)
+	time.Sleep(time.Duration(rand.Int63n(500)) * time.Millisecond)
+	fmt.Printf("requester %v sending request\n", i)
+	work <- Request{workFunc, c, i}
+	<-c
+	fmt.Printf("requester %v received response\n", i)
+}
+
+func workFunc() int {
+	fmt.Printf("executing workFunc\n")
+	time.Sleep(time.Duration(rand.Intn(2)) * time.Second)
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(10)
 }
 
 type LoadBalancer struct {
