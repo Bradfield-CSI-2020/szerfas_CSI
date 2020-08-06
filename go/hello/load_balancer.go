@@ -24,6 +24,7 @@ main
 */
 
 const num_workers int64 = 4
+var jobs_completed = 0
 
 func main() {
 	// create workers and channels
@@ -54,8 +55,11 @@ func main() {
 		go requester(lb.incoming_work, i)
 	}
 	fmt.Printf("starting balancing\n")
+	start := time.Now()
 	lb.Balance()
 	fmt.Printf("got to end of main\n")
+	time_elapsed := time.Since(start)
+	fmt.Println(time_elapsed)
 }
 
 // An Worker is something we manage in a priority queue.
@@ -96,12 +100,13 @@ func requester(work chan<- Request, i int) {
 	fmt.Printf("requester %v sending request\n", i)
 	work <- Request{workFunc, c, i}
 	<-c
-	fmt.Printf("requester %v received response\n", i)
+	jobs_completed++
+	fmt.Printf("requester %v received response; jobs completed now: %v\n", i, jobs_completed)
 }
 
 func workFunc() int {
 	fmt.Printf("executing workFunc\n")
-	time.Sleep(time.Duration(rand.Intn(2)) * time.Second)
+	time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(10)
 }
@@ -120,12 +125,12 @@ func (lb *LoadBalancer) StartWorkers() {
 
 func (lb *LoadBalancer) Balance() {
 	for {
-		timeout_time := 1 * time.Second
+		timeout_time := 3 * time.Second
 		timeout := time.After(timeout_time)
 		fmt.Printf("balancing with timeout time of %v\n", timeout_time)
 		select {
 		case worker := <-lb.done_notifications:
-			lb.CompleteWork(worker)  // may need go routine to prevent deadlock
+			go lb.CompleteWork(worker)  // may need go routine to prevent deadlock
 		case request := <-lb.incoming_work:
 			go lb.DispatchWork(request)  // may need go routine to prevent deadlock
 		case <-timeout:
@@ -138,29 +143,32 @@ func (lb *LoadBalancer) Balance() {
 }
 
 func (lb *LoadBalancer) CompleteWork (wp *Worker) {
-	// reduce Worker priority
-	wp.pending--
-	// lock to prevent simultaneous pops and replacement
+	// lock to prevent too many go routines grabbing the heap and moving indices out of range
 	lb.worker_pool.mux.Lock()
 	// fix/update the heap
-	lb.worker_pool.pq.updatePending(wp, wp.pending)
+	lb.worker_pool.pq.updatePending(wp, wp.pending - 1)
 	lb.worker_pool.mux.Unlock()
 }
 
 func (lb *LoadBalancer) DispatchWork(request Request) {
-	// lock to prevent simultaneous pops and replacement
+	// lock to prevent too many go routines grabbing the heap and moving indices out of range
 	lb.worker_pool.mux.Lock()
-	// pop from the heap
-	worker_interface := lb.worker_pool.pq.Pop()
-	lb.worker_pool.mux.Unlock()
-	worker := worker_interface.(*Worker)
+	lock_flag := true
+	worker := heap.Pop(&lb.worker_pool.pq).(*Worker)
+	if lb.worker_pool.pq.Len() > 0 {
+		lb.worker_pool.mux.Unlock()
+		lock_flag = false
+	}
+	// Note: we cannot unlock while sending request to worker because that may lead to too many go routines Popping the heap, leaving us with lb.worker_pool.mux.Unlock()
 	// send work
 	worker.request_channel <- request
 	// add to Worker pending count
 	worker.pending++
 	// push back on the heap
-	lb.worker_pool.mux.Lock()
-	lb.worker_pool.pq.Push(worker)
+	if lock_flag == false {
+		lb.worker_pool.mux.Lock()
+	}
+	heap.Push(&lb.worker_pool.pq, worker)
 	lb.worker_pool.mux.Unlock()
 }
 

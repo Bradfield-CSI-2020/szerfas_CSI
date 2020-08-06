@@ -3,6 +3,7 @@ package main
 
 import (
 	"container/heap"
+	"fmt"
 )
 
 // A PriorityQueue implements heap.Interface and holds Workers.
@@ -46,7 +47,7 @@ func (pq *PriorityQueue) updatePending(item *Worker, pending int) {
 
 // This example creates a PriorityQueue with some items, adds and manipulates an item,
 // and then removes the items in priority order.
-/*func main() {
+func main2() {
 
 	num_workers := 4
 	// Create a priority queue, put the items in it, and
@@ -72,4 +73,5 @@ func (pq *PriorityQueue) updatePending(item *Worker, pending int) {
 		item := heap.Pop(&pq).(*Worker)
 		fmt.Printf("%d items pending for worker: %s\n", item.pending, item.name)
 	}
-}*/
+	// heap.Pop(&pq)    <---- this returns an error, illustrating this heap is not safe to too many pops
+}
