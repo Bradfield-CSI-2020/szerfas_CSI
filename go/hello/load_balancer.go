@@ -1,8 +1,10 @@
 package main
 
 import (
+	"container/heap"
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -24,11 +26,12 @@ main
 const num_workers int64 = 4
 
 func main() {
-	worker_pool := PriorityQueue(make([]*Worker2, num_workers))
+	// create workers and channels
+	worker_pool := PriorityQueue(make([]*Worker, num_workers))
 	incoming_work := make(chan Request)
-	done_work := make(chan *Worker2)
+	done_work := make(chan *Worker)
 	for i, _ := range worker_pool {
-		worker_pool[i] = &Worker2{
+		worker_pool[i] = &Worker{
 			name: fmt.Sprintf("Worker %v", i),
 			pending: 0,
 			index: i,
@@ -36,9 +39,14 @@ func main() {
 			done_channel: done_work,
 		}
 	}
-	worker_pool = PriorityQueue(worker_pool)
+
+	// make safe and initialize into a heap
+	safe_worker_pool := SafePriorityQueue{pq: worker_pool}
+	heap.Init(&safe_worker_pool.pq)
 	fmt.Printf("worker pool is %v\n", worker_pool)
-	lb := &LoadBalancer{SafePriorityQueue{pq: worker_pool}, incoming_work, done_work}
+
+	//create loadbalancers, start workers, make requests, and begin to balance
+	lb := &LoadBalancer{safe_worker_pool, incoming_work, done_work}
 	fmt.Printf("starting workers\n")
 	lb.StartWorkers()
 	fmt.Printf("starting requests\n")
@@ -48,6 +56,30 @@ func main() {
 	fmt.Printf("starting balancing\n")
 	lb.Balance()
 	fmt.Printf("got to end of main\n")
+}
+
+// An Worker is something we manage in a priority queue.
+type Worker struct {
+	name string // The name of the worker; arbitrary.
+	pending int    // The number of pending items item in the queue.
+	// The index is needed by updatePending and is maintained by the heap.Interface methods.
+	index int // The index of the item in the heap.
+	request_channel chan Request
+	done_channel chan *Worker
+}
+
+func (w *Worker) work() {
+	for {
+		request := <- w.request_channel
+		request.response <- request.fn()
+		w.done_channel <- w
+	}
+}
+
+// SafePriorityQueue is a PriorityQueue safe to access concurrently
+type SafePriorityQueue struct {
+	pq PriorityQueue
+	mux sync.Mutex
 }
 
 
@@ -77,7 +109,7 @@ func workFunc() int {
 type LoadBalancer struct {
 	worker_pool SafePriorityQueue
 	incoming_work chan Request
-	done_notifications chan *Worker2
+	done_notifications chan *Worker
 }
 
 func (lb *LoadBalancer) StartWorkers() {
@@ -100,17 +132,17 @@ func (lb *LoadBalancer) Balance() {
 			fmt.Printf("received no work for timeout %v, exiting balancing\n", timeout_time)
 			return
 		//default:
-		//	fmt.Printf("got to ned of Balance\n")
+		//	fmt.Printf("got to end of Balance\n")
 		}
 	}
 }
 
-func (lb *LoadBalancer) CompleteWork (wp *Worker2) {
-	// reduce Worker2 priority
+func (lb *LoadBalancer) CompleteWork (wp *Worker) {
+	// reduce Worker priority
 	wp.pending--
-	// fix/update the heap
 	// lock to prevent simultaneous pops and replacement
 	lb.worker_pool.mux.Lock()
+	// fix/update the heap
 	lb.worker_pool.pq.updatePending(wp, wp.pending)
 	lb.worker_pool.mux.Unlock()
 }
@@ -121,10 +153,10 @@ func (lb *LoadBalancer) DispatchWork(request Request) {
 	// pop from the heap
 	worker_interface := lb.worker_pool.pq.Pop()
 	lb.worker_pool.mux.Unlock()
-	worker := worker_interface.(*Worker2)
+	worker := worker_interface.(*Worker)
 	// send work
 	worker.request_channel <- request
-	// add to Worker2 pending count
+	// add to Worker pending count
 	worker.pending++
 	// push back on the heap
 	lb.worker_pool.mux.Lock()
