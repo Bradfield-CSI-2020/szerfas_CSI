@@ -31,49 +31,90 @@ func compute(memory []byte) {
 
 	registers := [3]byte{8, 0, 0} // PC, R1 and R2
 
-	var pc byte
-	var reg *byte
-	var reg1 *byte
-	var reg2 *byte
-
 	// Keep looping, like a physical computer's clock
 	for {
-		pc = registers[0]
 		instruction := memory[registers[0]]
 		switch instruction {
 		case Load:
-			load(&registers, &memory, pc)
+			load(&registers, &memory)
 		case Store:
-			reg = getRegisterFromPC(&registers, memory[pc+1])
-			storeFromRegister(reg, memory, pc+2)
-			registers[0] += 3
-			store(&registers, &memory, pc)
+			store(&registers, &memory)
 		case Add:
-			reg1 = getRegisterFromPC(&registers, memory[pc+1])
-			reg2 = getRegisterFromPC(&registers, memory[pc+2])
-			*reg1 = *reg1 + *reg2
-			registers[0] += 3
+			add(&registers, &memory)
 		case Sub:
-			reg1 = getRegisterFromPC(&registers, memory[pc+1])
-			reg2 = getRegisterFromPC(&registers, memory[pc+2])
-			*reg1 = *reg1 - *reg2
-			registers[0] += 3
+			subtract(&registers, &memory)
+		case Addi:
+			addi(&registers, &memory)
+		case Subi:
+			subi(&registers, &memory)
+		case Jump:
+			pc := registers[0]
+			registers[0] = memory[pc + 1]
+		case Beqz:
+			beqz(&registers, &memory)
 		case Halt:
 			fmt.Println("halting")
+			return
+		default:
+			fmt.Printf("did not find instruction\n")
 			return
 		}
 	}
 }
 
-func load(registers *[3]byte, memory *[]byte, pc byte) {
+func load(registers *[3]byte, memory *[]byte) {
+	pc := registers[0]
 	reg := getRegisterFromPC(registers, (*memory)[pc+1])
 	setRegister(reg, *memory, pc+2)
 	registers[0] += 3
 }
 
-func store(registers *[3]byte, memory *[]byte, pc byte) {
+func store(registers *[3]byte, memory *[]byte) {
+	pc := registers[0]
 	reg := getRegisterFromPC(registers, (*memory)[pc+1])
 	storeFromRegister(reg, *memory, pc+2)
+	registers[0] += 3
+}
+
+func add(registers *[3]byte, memory *[]byte) {
+	pc := registers[0]
+	reg1 := getRegisterFromPC(registers, (*memory)[pc+1])
+	reg2 := getRegisterFromPC(registers, (*memory)[pc+2])
+	*reg1 = *reg1 + *reg2
+	registers[0] += 3
+}
+
+func subtract(registers *[3]byte, memory *[]byte) {
+	pc := registers[0]
+	reg1 := getRegisterFromPC(registers, (*memory)[pc+1])
+	reg2 := getRegisterFromPC(registers, (*memory)[pc+2])
+	*reg1 = *reg1 - *reg2
+	registers[0] += 3
+}
+
+func addi(registers *[3]byte, memory *[]byte) {
+	pc := registers[0]
+	reg := getRegisterFromPC(registers, (*memory)[pc+1])
+	addVal := (*memory)[pc+2]
+	*reg = *reg + addVal
+	registers[0] += 3
+}
+
+func subi(registers *[3]byte, memory *[]byte) {
+	pc := registers[0]
+	reg := getRegisterFromPC(registers, (*memory)[pc+1])
+	addVal := (*memory)[pc+2]
+	*reg = *reg - addVal
+	registers[0] += 3
+}
+
+func beqz(registers *[3]byte, memory *[]byte) {
+	pc := registers[0]
+	reg := getRegisterFromPC(registers, (*memory)[pc+1])
+	if *reg == 0 {
+		offset := (*memory)[pc+2]
+		registers[0] += offset
+	}
 	registers[0] += 3
 }
 
