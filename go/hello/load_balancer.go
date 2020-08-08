@@ -1,4 +1,4 @@
-package main
+package testy
 
 import (
 	"container/heap"
@@ -51,7 +51,7 @@ func main() {
 	fmt.Printf("starting workers\n")
 	lb.StartWorkers()
 	fmt.Printf("starting requests\n")
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1000; i++ {
 		go requester(lb.incoming_work, i)
 	}
 	fmt.Printf("starting balancing\n")
@@ -96,7 +96,7 @@ type Request struct {
 func requester(work chan<- Request, i int) {
 	c := make(chan int)
 	fmt.Printf("requester %v preparing request\n", i)
-	time.Sleep(time.Duration(rand.Int63n(500)) * time.Millisecond)
+	//time.Sleep(time.Duration(rand.Int63n(500)) * time.Millisecond)
 	fmt.Printf("requester %v sending request\n", i)
 	work <- Request{workFunc, c, i}
 	<-c
@@ -106,7 +106,7 @@ func requester(work chan<- Request, i int) {
 
 func workFunc() int {
 	fmt.Printf("executing workFunc\n")
-	time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
+	time.Sleep(time.Duration(rand.Intn(10)) * time.Millisecond)
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(10)
 }
