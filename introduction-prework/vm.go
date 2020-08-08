@@ -43,13 +43,11 @@ func compute(memory []byte) {
 		switch instruction {
 		case Load:
 			load(&registers, &memory, pc)
-			//reg = getRegisterFromPC(&registers, memory[pc+1])
-			//setRegister(reg, memory, pc+2)
-			//registers[0] += 3
 		case Store:
 			reg = getRegisterFromPC(&registers, memory[pc+1])
 			storeFromRegister(reg, memory, pc+2)
 			registers[0] += 3
+			store(&registers, &memory, pc)
 		case Add:
 			reg1 = getRegisterFromPC(&registers, memory[pc+1])
 			reg2 = getRegisterFromPC(&registers, memory[pc+2])
@@ -70,6 +68,12 @@ func compute(memory []byte) {
 func load(registers *[3]byte, memory *[]byte, pc byte) {
 	reg := getRegisterFromPC(registers, (*memory)[pc+1])
 	setRegister(reg, *memory, pc+2)
+	registers[0] += 3
+}
+
+func store(registers *[3]byte, memory *[]byte, pc byte) {
+	reg := getRegisterFromPC(registers, (*memory)[pc+1])
+	storeFromRegister(reg, *memory, pc+2)
 	registers[0] += 3
 }
 
