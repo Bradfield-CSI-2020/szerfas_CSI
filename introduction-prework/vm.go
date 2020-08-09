@@ -53,7 +53,6 @@ func compute(memory []byte) {
 		case Beqz:
 			beqz(&registers, &memory)
 		case Halt:
-			fmt.Println("halting")
 			return
 		default:
 			fmt.Printf("did not find instruction\n")
