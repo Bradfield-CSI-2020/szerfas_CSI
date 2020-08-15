@@ -42,12 +42,16 @@
 
 
 int main() {
-    printf("%c\n", 'a');
-    printf("%d\n", 5 % -2);
-    printf("%d\n", -5 % -2);
-    printf("%d\n", -5 % 2);
-    // etc.
-    printf("%f\n", 5.3 / -2);
-    printf("%f\n", -6.1 / 2);
-    // etc.
+//    printf("%c\n", 'a');
+//    printf("%d\n", 5 % -2);
+//    printf("%d\n", -5 % -2);
+//    printf("%d\n", -5 % 2);
+//    // etc.
+//    printf("%f\n", 5.3 / -2);
+//    printf("%f\n", -6.1 / 2);
+//    // etc.
+    int y = 0xdeadbeefdeadbeef;
+    char x = y;
+    return x;
+    printf("end");
 }

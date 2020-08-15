@@ -49,7 +49,7 @@ func compute(memory []byte) {
 			subi(&registers, &memory)
 		case Jump:
 			pc := registers[0]
-			registers[0] = memory[pc + 1]
+			registers[0] = memory[pc+1]
 		case Beqz:
 			beqz(&registers, &memory)
 		case Halt:

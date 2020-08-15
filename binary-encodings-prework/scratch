@@ -1,0 +1,23 @@
+// Convert the first 5 bytes in the file by hand to binary. Write these down as you’ll use them again in a later exercise
+68 65 6c 6c 6f
+0110 0100
+0110 0101
+0110 1100
+0110 1100
+0110 1111
+
+// Convert the following decimal numbers to binary
+4	0000 0100
+65	0100 0001
+105	0110 1001
+255	1111 1111
+
+// Convert the following binary representations of unsigned integers to decimal
+10		2
+11		3
+110 1100	108
+101 0101	85
+
+// Add these two binary numbers and determine the result by doing the addition “in binary”. Convert each number and check that the result matches your expectation.
+11111111 + 00001101 = ?? 
+
