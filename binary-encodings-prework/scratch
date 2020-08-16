@@ -1,10 +1,10 @@
 // Convert the first 5 bytes in the file by hand to binary. Write these down as you’ll use them again in a later exercise
 68 65 6c 6c 6f
-0110 0100
-0110 0101
-0110 1100
-0110 1100
-0110 1111
+0110 1000  --> utf-8 encoded: 110 0100 ->8 + 32 + 64 = 104
+0110 0101  --> 110 0101 -> 101
+0110 1100  --> 110 1100 -> 108
+0110 1100  --> 110 1100 -> 108
+0110 1111  --> 110 1111 -> 111
 
 // Convert the following decimal numbers to binary
 4	0000 0100

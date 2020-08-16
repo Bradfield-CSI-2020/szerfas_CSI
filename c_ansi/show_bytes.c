@@ -29,14 +29,16 @@ void show_int_casting_pointer_as_unsigned_char(int i) {
     show_bytes_unsigned_char_pointer_start((unsigned char*) &i, sizeof(int));
 }
 
-//void show_float(float f) {
+void show_float(float f) {
 //    show_bytes((byte_pointer) &f, sizeof(float));
-//}
-//
+    show_bytes_unsigned_char_pointer_start((unsigned char*) &f, sizeof(float));
+}
+
 //void show_pointer(void *p) {
 //    show_bytes((byte_pointer) p, sizeof(void *));
 //}
 
+// note: this machine uses little endian format
 int main() {
     show_int(12345);
     show_int_casting_pointer_as_unsigned_char(12345);
@@ -44,7 +46,28 @@ int main() {
     printf("sizeof int*: %lu\n", sizeof(int*));
     printf("sizeof char*: %lu\n", sizeof(char*));
     printf("sizeof void*: %lu\n", sizeof(void*));
-//    show_float(12345);
+    show_float(12345);
+
+
+//    float f = 0;
+//    unsigned int *p;
+//    p = (unsigned int *) &f;
+//    (*p) = (*p) | 1U << 31;
+//    (*p) = (*p) | 1U << 26;
+//    (*p) = (*p) | 1U << 22;
+//    (*p) = (*p) | 1U << 20;
+//    (*p) = (*p) | 1U << 18;
+
+    float f = 0;
+    unsigned int v = *(unsigned int *)&f;
+    v |= 1U << 31;
+    v |= 1U << 26;
+    v |= 1U << 22;
+    v |= 1U << 20;
+    v |= 1U << 18;
+
+    // expecting this to print equal 42.5 but can't get the bitwise manipulation of floats to work
+    printf("%f\t%lu\n", (float) v, sizeof(f));
 //    void *p;
 //    show_pointer(p);
 }
