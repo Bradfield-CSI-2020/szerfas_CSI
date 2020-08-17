@@ -23,17 +23,17 @@ process_first_char:
                     je          done
                     sub         r11, 65                 ; set value to 1 if A, 2 if B, and so on
                     cmp         r11, 0
-                    jl          process_str_loop             ; if less than A, out of range, so repeat
+                    jl          process_str_loop        ; if less than A, out of range, so repeat
                     cmp         r11, 26                 ; if less than 26 at this point, it's a cap letter ready for processing
                     jl          add_count
                     cmp         r11, 57                 ; if greater than 57, out of range
-                    jg          process_str
+                    jg          process_str_loop
                     cmp         r11, 32                 ; if 32 <= char <= 57, then lower-case
                     jge         lower_case
 
 add_count:
                     bts         rax, r11
-                    jmp         process_str
+                    jmp         process_str_loop
 
 lower_case:
                     sub         r11, 32                 ; set equal to 1 if a, 2 if b, and so on
