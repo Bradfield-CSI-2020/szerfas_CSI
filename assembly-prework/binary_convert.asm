@@ -1,4 +1,6 @@
+; approach
 
+; input = input string
 ; result = 0
 ; for i = 0; i < len(input); i++ {
 ;    result = 2 * result + input[i]
@@ -20,9 +22,35 @@
 ;001 1
 ;000 0
 
-; examine first line in string
-; if one, then multiply by
-section .text
-global binary_convert
-binary_convert:
-	ret
+
+; in assembly pseudocode
+; use jump-to-middle loop structure: initialize section, loop section, test section, done section; initialize section jumps to test section which jumps to loop section if fail
+; initialize: initialize output to zero,
+; loop: pull from rdi memory reference and pass that to for loop logic, increment rdi pointer
+; test: if rdi memory reference is
+; jump to test condition
+; if test condition fails, then jump up to top of loop set up text condition
+
+                    section     .text
+                    global      binary_convert
+binary_convert:     mov         rax, 0                  ; initialize return value to zero
+                    mov         rcx, 1                  ; prepare a 1 for future use
+                    movzx       r11, byte [rdi]         ; initialize r11 for comparison comparison
+
+loop:               mov         rdx, 0                  ; initialize/reset rdx to prepare a 0 for future use
+                    cmp         r11, one_char           ; check if char equal to 1 - 49 is ascii decimal value for "1"
+                    cmove       rdx, rcx                ; if so, prepare to add 1 to new result
+                    sal         rax, 1                  ; multiply result by 2
+                    add         rax, rdx                ; add either 1 or 0 to new resul
+test:
+                    inc         rdi                     ; increment character pointer
+                    movzx       r11, byte [rdi]         ; pull new char for comparison
+                    cmp         r11, terminal_char      ; compare to terminal char
+                    jne         loop                    ; if not at null character, jump to top of the loop
+done:               ret
+
+                    section     .data
+one_char:            equ         49                     ; ascii number for "1"
+terminal_char:       equ         0                      ; WHY DOES PROGRAM RETURN ZERO IF THIS IS NOT SET TO NULL? (e.g., the newline char 10)?
+
+

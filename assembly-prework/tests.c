@@ -40,6 +40,7 @@ void test_pangram_mixed_case(void) {
 void test_pangram_phrase(void) {
   TEST_ASSERT_TRUE(pangram("the quick brown fox jumps over teh lazy dog"));
 }
+void test_pangram_phrase_bonus(void) { TEST_ASSERT_EQUAL(4, pangram("1111")); }
 
 int main(void) {
     UNITY_BEGIN();
@@ -62,6 +63,7 @@ int main(void) {
     RUN_TEST(test_pangram_incomplete);
     RUN_TEST(test_pangram_mixed_case);
     RUN_TEST(test_pangram_phrase);
+//    RUN_TEST(test_pangram_phrase_bonus);  // use to test looping through a string as expected, then turn off
 
     return UNITY_END();
 }
