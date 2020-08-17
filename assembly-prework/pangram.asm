@@ -5,7 +5,7 @@
 ;bit-set value of the char - a ascii
 ;check to see if equal to expected output (67108863 in decimal, or 3FFFFFF in hex, which is 26 1's in binary)
 
-                    section         .text
+                    section     .text
                     global      pangram
 
 pangram:
