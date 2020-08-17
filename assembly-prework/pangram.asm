@@ -1,29 +1,55 @@
-            section         .text
-            global      pangram
-pangram:    mov         rax, 0                  ; initialize return value to zero
-;            mov         rcx, 1                  ; setting step to 1
-;            movzx       r11, byte [rdi]         ; initialize r11 for comparison comparison
-;loop:
-;            add         rax, rcx
-;test:
-;            inc         rdi                     ; increment character pointer
-;            movzx       r11, byte [rdi]         ; pull new char for comparison
-;            cmp         r11, terminal_char      ; compare to terminal char
-;            jne         loop                    ; if not at null character, jump to top of the loop
-
-done:	    ret
-
-;                    section     .data
-;terminal_char:       equ         0                      ; WHY DOES PROGRAM RETURN ZERO IF THIS IS NOT SET TO NULL? (e.g., the newline char 10)?
-;
-;                    section     .rodata
-;jump_table          .align
-
-
+; approach
 
 ;get char
 ;reduce to char - a ascii value
-;bitshift
-;check to see if equal
+;bitshift value of the char - a ascii
+;check to see if equal to expected output (67108863 in decimal, or 3FFFFFF in hex, which is 26 1's in binary)
+
+            section         .text
+            global      pangram
+
+pangram:
+            mov         rax, 0                  ; initialize return value to zero
+            mov         rcx, 1                  ; setting step to 1
+            movzx       r11, byte [rdi]         ; pull string to compare
+            jmp         first_proc
+
+process_str:
+            inc         rdi
+            movzx       r11, byte [rdi]         ; pull new char for comparison
+
+first_proc:
+            cmp         r11, terminal_char      ; compare to terminal char
+            je          done
+            sub         r11, 65                 ; set value to 1 if A, 2 if B, and so on
+            cmp         r11, 0
+            jl          process_str             ; if less than A, out of range, so repeat
+            cmp         r11, 26                 ; if less than 26 at this point, it's a cap letter ready for processing
+            jl          add_count
+            cmp         r11, 57                 ; if greater than 57, out of range
+            jg          process_str
+            cmp         r11, 32                 ; if 32 <= char <= 57, then lower-case
+            jge         lower_case
+
+add_count:
+            bts         rax, r11
+            jmp         process_str
+
+lower_case:
+            sub         r11, 32                 ; set equal to 1 if a, 2 if b, and so on
+            jmp         add_count
+
+
+done:	    mov         r10, 0
+            cmp         rax, 67108863           ; compare to 26 1's in binary
+            cmovne       rax, r10
+            ret
+
+                    section     .data
+terminal_char:      equ         0
+
+
+
+
 
 

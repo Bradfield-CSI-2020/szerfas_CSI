@@ -29,7 +29,7 @@
 ; loop: pull from rdi memory reference and pass that to for loop logic, increment rdi pointer
 ; test: if rdi memory reference is
 ; jump to test condition
-; if test condition fails, then jump up to top of loop set up text condition
+; if test condition fails, then jump up to top of loop
 
                     section     .text
                     global      binary_convert

@@ -25,22 +25,31 @@ void test_convert_10101101(void) {
 }
 
 void test_pangram_empty(void) { TEST_ASSERT_FALSE(pangram("")); }
+void test_pangram_empty_count(void) { TEST_ASSERT_EQUAL(0, pangram("")); }
 void test_pangram_alpha(void) {
   TEST_ASSERT_TRUE(pangram("abcdefghijklmnopqrstuvwxyz"));
 }
+void test_pangram_alpha_count(void) { TEST_ASSERT_EQUAL(67108863, pangram("abcdefghijklmnopqrstuvwxyz")); }
+void test_pangram_alpha_caps(void) {
+  TEST_ASSERT_TRUE(pangram("ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+}
+void test_pangram_alpha_caps_count(void) { TEST_ASSERT_EQUAL(67108863, pangram("ABCDEFGHIJKLMNOPQRSTUVWXYZ")); }
 void test_pangram_punctuated(void) {
   TEST_ASSERT_TRUE(pangram("abc, def! ghi... jkl25; mnopqrstuvwxyz"));
 }
+void test_pangram_punctuated_count(void) { TEST_ASSERT_EQUAL(67108863, pangram("abc, def! ghi... jkl25; mnopqrstuvwxyz")); }
 void test_pangram_incomplete(void) {
   TEST_ASSERT_FALSE(pangram("abcdefghijklmnopqrstuvwxy"));
 }
+void test_pangram_incomplete_count(void) { TEST_ASSERT_EQUAL(33554431, pangram("abcdefghijklmnopqrstuvwxy")); }
 void test_pangram_mixed_case(void) {
   TEST_ASSERT_TRUE(pangram("ABCdefGHIjklMNOpqrSTUvwxYZ"));
 }
+void test_pangram_mixed_case_count(void) { TEST_ASSERT_EQUAL(67108863, pangram("ABCdefGHIjklMNOpqrSTUvwxYZ")); }
 void test_pangram_phrase(void) {
   TEST_ASSERT_TRUE(pangram("the quick brown fox jumps over teh lazy dog"));
 }
-void test_pangram_phrase_bonus(void) { TEST_ASSERT_EQUAL(4, pangram("1111")); }
+void test_pangram_phrase_bonus(void) { TEST_ASSERT_EQUAL(67108863, pangram("the quick brown fox jumps over teh lazy dog")); }
 
 int main(void) {
     UNITY_BEGIN();
@@ -58,12 +67,19 @@ int main(void) {
     RUN_TEST(test_convert_10101101);
 
     RUN_TEST(test_pangram_empty);
+    RUN_TEST(test_pangram_empty_count);
     RUN_TEST(test_pangram_alpha);
+    RUN_TEST(test_pangram_alpha_count);
+    RUN_TEST(test_pangram_alpha_caps);
+    RUN_TEST(test_pangram_alpha_caps_count);
     RUN_TEST(test_pangram_punctuated);
+    RUN_TEST(test_pangram_punctuated_count);
     RUN_TEST(test_pangram_incomplete);
+//    RUN_TEST(test_pangram_incomplete_count); // use to debug what is in RAX upon completion
     RUN_TEST(test_pangram_mixed_case);
+    RUN_TEST(test_pangram_mixed_case_count);
     RUN_TEST(test_pangram_phrase);
-//    RUN_TEST(test_pangram_phrase_bonus);  // use to test looping through a string as expected, then turn off
+    RUN_TEST(test_pangram_phrase_bonus);  // use to test looping through a string as expected, then turn off
 
     return UNITY_END();
 }
