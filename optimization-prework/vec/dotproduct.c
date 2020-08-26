@@ -21,44 +21,29 @@
 
 
 data_t dotproduct(vec_ptr u, vec_ptr v) {
-    printf("u is %p; v is %p\n", (void *) u, (void *) v);
+   data_t sum0 = 0;
+   data_t sum1 = 0;
+   data_t sum2 = 0;
+   data_t sum3 = 0;
 
-   data_t sum = 0;
    data_t *up = get_vec_start(u);
-//   data_t *up = u->data;
-//   printf("up is %p\n", (void *) up);
    data_t *vp = get_vec_start(v);
-//   data_t *vp = v->data;
-//   printf("vp is %p\n", (void *) vp);
-
-
-/* Command set two: does not segfault until the loop */
-//   data_t sum = 0, u_val, v_val;
-//   long *up = &u_val;
-//   long *vp = &v_val;
-
-//   get_vec_element(u, 0, up);
-//   get_vec_element(v, 0, vp);
 
    long length = vec_length(u);
-   printf("vec_length is %ld\n", length);
-   printf("*up is %ld", (long) *up);
-   printf("*vp is %ld", (long) *vp);
-//   sum += *up * *vp;
 
-   printf("up is %p\n", (void *) up);
-   printf("vp is %p\n", (void *) vp);
-
-   for (long i = 0; i < length; i++) { // we can assume both vectors are same length
-//        up++;
-//        vp++;
-        if (i < 10) {
-            printf("up is %p\n", (void *) up);
-            printf("vp is %p\n", (void *) vp);
-        }
-        sum += *(up+i) * *(vp+i);
+   long i = 0;
+   for (; i < length; i += 4) { // we can assume both vectors are same length
+        sum0 += *(up+i) * *(vp+i);
+        sum1 += *(up+i+1) * *(vp+i+1);
+        sum2 += *(up+i+2) * *(vp+i+2);
+        sum3 += *(up+i+3) * *(vp+i+3);
    }
-   return sum;
+
+   for (; i < length; i++) {
+      sum0 += *(up+i) * *(vp+i);
+    }
+
+   return sum0 + sum1 + sum2 + sum3;
 }
 
 
