@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "vec.h"
 
@@ -48,6 +49,8 @@ int get_vec_element(vec_ptr v, long index, data_t *dest)
 /* Return length of vector */
 long vec_length(vec_ptr v)
 {
+    printf("vec_ptr v inside vec_length is %p\n", (void *)v);
+    printf("length is %ld\n", v->len);
     return v->len;
 }
 
