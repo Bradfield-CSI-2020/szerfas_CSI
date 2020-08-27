@@ -7,17 +7,35 @@ http://stackoverflow.com/questions/9936132/why-does-the-order-of-the-loops-affec
 
 */
 
-void option_one() {
-  int i, j;
-  static int x[4000][4000];
-  for (i = 0; i < 4000; i++) {
-    for (j = 0; j < 4000; j++) {
-      x[i][j] = i + j;
-    }
-  }
-}
+//void option_one() {
+//  int i, j;
+//  static int x[4000][4000];
+//  for (i = 0; i < 4000; i++) {
+//    for (j = 0; j < 4000; j++) {
+//      x[i][j] = i + j;
+//    }
+//  }
+//}
 
-void option_two() {
+//void option_two() {
+//  int i, j;
+//  static int x[4000][4000];
+//  for (i = 0; i < 4000; i++) {
+//    for (j = 0; j < 4000; j++) {
+//      x[j][i] = i + j;
+//    }
+//  }
+//}
+//
+//int main() {
+//  option_one();
+//  option_two();
+//  return 0;
+//}
+
+
+
+int *option_two()[4000][4000] {
   int i, j;
   static int x[4000][4000];
   for (i = 0; i < 4000; i++) {
@@ -25,10 +43,27 @@ void option_two() {
       x[j][i] = i + j;
     }
   }
+  return x;
 }
 
 int main() {
-  option_one();
-  option_two();
+  int x = option_two();
   return 0;
 }
+
+
+//int * option_one() {
+//  int i, j;
+//  static int x[4000][4000];
+//  for (i = 0; i < 4000; i++) {
+//    for (j = 0; j < 4000; j++) {
+//      x[i][j] = i + j;
+//    }
+//  }
+//  return &x;
+//}
+//
+//int main() {
+//  int * x = option_one();
+//  return 0;
+//}
