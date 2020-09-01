@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -45,8 +47,10 @@ func main() {
 	args := os.Args[1:]
 	fmt.Printf("args are: ")
 	fmt.Println(args)
+	HandleArgs(args)
 	MainLoop2()
-	fmt.Println("🍳 Goodbye! 🍳")
+	fmt.Println("🍳🍳🍳 Goodbye! 🍳🍳🍳")
+	fmt.Println()
 }
 
 func MainLoop2() {
@@ -61,7 +65,8 @@ func MainLoop2() {
 			go ReceiveInput(userInput)
 		case <-signals:
 			fmt.Println()
-			fmt.Println("🥚🥚🥚 Have an egggzellent day! 🥚🥚🥚")
+			fmt.Println()
+			fmt.Println("Have an 🥚zellent day!")
 			return
 		}
 	}
@@ -71,11 +76,42 @@ func ReceiveInput(done chan bool) {
 	var line string
 	var err error
 	b := bufio.NewReader(os.Stdin)
+	fmt.Printf("🥚> ")
 	line, err = b.ReadString('\n')
 	if err != nil {
 		os.Stderr.WriteString("error! please try another command")
 	} else {
-		fmt.Printf("output line is: %s", line)
+		args := strings.Fields(line)
+		HandleArgs(args)
 	}
 	done <-true
+}
+
+func HandleArgs(args []string) {
+	switch args[0] {
+	case "ls":
+		fmt.Println("command is ls")
+		path, err := os.Getwd()
+		if err != nil {
+			log.Println(err)
+		}
+		files, err := ioutil.ReadDir(path)
+		if err != nil {
+			log.Println(err)
+		}
+		for _, f := range files {
+			fmt.Println(f.Name())
+		}
+	case "pwd":
+		fmt.Println("command is pwd")
+		path, err := os.Getwd()
+		if err != nil {
+			log.Println(err)
+		}
+		fmt.Println(path)
+	case "echo":
+		fmt.Println(strings.Join(args[1:], " "))
+	default:
+		fmt.Println("command not recognized, please try another command")
+	}
 }
