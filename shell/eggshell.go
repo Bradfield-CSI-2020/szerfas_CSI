@@ -42,6 +42,9 @@ func MainLoop() {
 // second case is receiving on a channel from input: prints and loops
 
 func main() {
+	args := os.Args[1:]
+	fmt.Printf("args are: ")
+	fmt.Println(args)
 	MainLoop2()
 	fmt.Println("🍳 Goodbye! 🍳")
 }
