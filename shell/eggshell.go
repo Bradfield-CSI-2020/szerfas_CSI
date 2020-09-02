@@ -2,11 +2,13 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -47,23 +49,37 @@ func main() {
 	args := os.Args[1:]
 	fmt.Printf("args are: ")
 	fmt.Println(args)
-	HandleArgs(args)
+	//if len(args) > 0 {
+	//	done := make(chan bool)
+	//	inputReceived
+	//	HandleArgs(done, args)
+	//}
 	MainLoop2()
 	fmt.Println("🍳🍳🍳 Goodbye! 🍳🍳🍳")
 	fmt.Println()
 }
 
 func MainLoop2() {
+
 	signals := make(chan os.Signal, 1)  // note: this creates a buffered channel, I wonder if it will work with an unbuffered channel?
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	userInput := make(chan bool)
-	go ReceiveInput(userInput)
+	done := make(chan bool)
+
+	args := os.Args[1:]
+	go ReceiveInput(userInput, done, args)
+
 	for {
 		select {
 		case <-userInput:
-			go ReceiveInput(userInput)
+			go ReceiveInput(userInput, done, nil)
 		case <-signals:
+			fmt.Println()
+			fmt.Println()
+			fmt.Println("Have an 🥚zellent day!")
+			return
+		case <-done:
 			fmt.Println()
 			fmt.Println()
 			fmt.Println("Have an 🥚zellent day!")
@@ -72,22 +88,30 @@ func MainLoop2() {
 	}
 }
 
-func ReceiveInput(done chan bool) {
-	var line string
-	var err error
-	b := bufio.NewReader(os.Stdin)
-	fmt.Printf("🥚> ")
-	line, err = b.ReadString('\n')
-	if err != nil {
-		os.Stderr.WriteString("error! please try another command")
+func ReceiveInput(inputReceived chan bool, exit chan bool, args []string) {
+	if args != nil && len(args) > 0 {
+		HandleArgs(inputReceived, exit, args)
 	} else {
-		args := strings.Fields(line)
-		HandleArgs(args)
+		var line string
+		var err error
+		b := bufio.NewReader(os.Stdin)
+		fmt.Printf("🥚> ")
+		line, err = b.ReadString('\n')
+		if err != nil {
+			os.Stderr.WriteString("error! please try another command")
+		} else {
+			args := strings.Fields(line)
+			HandleArgs(inputReceived, exit, args)
+		}
 	}
-	done <-true
 }
 
-func HandleArgs(args []string) {
+func HandleArgs(inputReceived chan bool, exit chan bool, args []string) {
+	if args[0] == "exit"{
+		exit <- true
+		return
+	}
+
 	switch args[0] {
 	case "ls":
 		fmt.Println("command is ls")
@@ -102,6 +126,15 @@ func HandleArgs(args []string) {
 		for _, f := range files {
 			fmt.Println(f.Name())
 		}
+	case "ls_binary":
+		cmd := exec.Command("ls", args[1:]...)
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		err := cmd.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(cmd.Stdout)
 	case "pwd":
 		fmt.Println("command is pwd")
 		path, err := os.Getwd()
@@ -114,4 +147,5 @@ func HandleArgs(args []string) {
 	default:
 		fmt.Println("command not recognized, please try another command")
 	}
+	inputReceived <- true
 }
