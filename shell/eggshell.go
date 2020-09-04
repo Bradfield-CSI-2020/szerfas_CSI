@@ -61,8 +61,8 @@ func main() {
 
 func MainLoop2() {
 
-	signals := make(chan os.Signal, 1)  // note: this creates a buffered channel, I wonder if it will work with an unbuffered channel?
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+	//signals := make(chan os.Signal, 1)  // note: this creates a buffered channel, I wonder if it will work with an unbuffered channel?
+	//signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	userInput := make(chan bool)
 	done := make(chan bool)
@@ -74,11 +74,11 @@ func MainLoop2() {
 		select {
 		case <-userInput:
 			go ReceiveInput(userInput, done, nil)
-		case <-signals:
-			fmt.Println()
-			fmt.Println()
-			fmt.Println("Have an 🥚zellent day!")
-			return
+		//case <-signals:
+		//	fmt.Println()
+		//	fmt.Println()
+		//	fmt.Println("Have an 🥚zellent day!")
+		//	return
 		case <-done:
 			fmt.Println()
 			fmt.Println()
@@ -127,13 +127,64 @@ func HandleArgs(inputReceived chan bool, exit chan bool, args []string) {
 			fmt.Println(f.Name())
 		}
 	case "ls_binary":
-		cmd := exec.Command("ls", args[1:]...)
+		cmd := exec.Command("ls", args[1:]...)   // we can get pid of child via cmd.Process.Pid
 		var out bytes.Buffer
 		cmd.Stdout = &out
-		err := cmd.Run()
+		sigs := make(chan os.Signal, 1)
+		// this effectively blocks SIGINT and SIGTERM until we receive an handle, making it safe to start the child without race conditions
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+		err := cmd.Start()
 		if err != nil {
 			log.Fatal(err)
 		}
+		go func() {
+			if sig := <-sigs; sig == syscall.SIGINT {
+				err := syscall.Kill(cmd.Process.Pid, syscall.SIGINT)
+				if err != nil {
+					log.Fatal("unable to interrupt child process")
+				}
+				fmt.Println()
+				fmt.Println("")
+			}
+			fmt.Println()
+			fmt.Println("Ending go routine that would interrupt child process")
+		}()
+		err = cmd.Wait()
+		if err != nil {
+			log.Fatal(err)
+		}
+		// unblock and reset default shell behavior for SIGINT and SIGTERM as we no longer want to pass on to client
+		signal.Reset()
+		fmt.Println(cmd.Stdout)
+	case "sleep":
+		cmd := exec.Command("sleep", args[1:]...)   // we can get pid of child via cmd.Process.Pid
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		sigs := make(chan os.Signal, 1)
+		// this effectively blocks SIGINT and SIGTERM until we receive a handle, making it safe to start the child without race conditions
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+		err := cmd.Start()
+		if err != nil {
+			log.Fatal(err)
+		}
+		go func(sigs chan os.Signal) {
+			sig := <-sigs
+			if sig == syscall.SIGINT {
+				err := syscall.Kill(cmd.Process.Pid, syscall.SIGINT)
+				if err != nil {
+					log.Fatal("unable to interrupt child process")
+				}
+				fmt.Println()
+				fmt.Println("child process interrupted")
+			}
+			fmt.Println()
+		}(sigs)
+		err = cmd.Wait()
+		if err != nil {
+			fmt.Printf("child process exited with error: %s", err)
+		}
+		// unblock and reset default shell behavior for SIGINT and SIGTERM as we no longer want to pass on to client
+		signal.Reset(syscall.SIGINT, syscall.SIGTERM)
 		fmt.Println(cmd.Stdout)
 	case "pwd":
 		fmt.Println("command is pwd")
