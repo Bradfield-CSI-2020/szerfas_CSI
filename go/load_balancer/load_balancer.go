@@ -1,4 +1,4 @@
-package testy
+package main
 
 import (
 	"container/heap"
@@ -9,18 +9,25 @@ import (
 )
 
 /*
-Architecture
-	load balancer {pool of workers}
-		maintains workers in a heap
-		select statement for incoming requests
-			sends incoming tasks to top of heap
-			notes updates to asks as cause to re-arrange heap
-	Workers {channel to receive work, channel to indicate done with work, # of pending tasks}
-	requests{workFunc, response chan} sent to workers via request func
-main
-	workers created
-	load balancer created
-	loops through and calls requests
+This package implements (with some modifications) a simple load balancer as described in Rob Pike's famous "Concurrency is
+Not Parallelism" talk. Talk here: https://blog.golang.org/waza-talk. Slides here: https://talks.golang.org/2012/waza.slide#1.
+The use of go routines enables simple, inexpensive concurrent operations, making setting up something like a load balancer surprisingly easy.
+I could not find references outside the slides to a working implementation of his code, so I made my own.
+I deviated from his starting code where I was interested in going a little deeper, or where it seemed prudent to do so
+(e.g., ensuring my heap of workers was safe to engage with concurrently.)
+
+High-level architecture
+	LoadBalancer{pool of workers}
+		maintains workers in a heap, that with the least amount of current work sits at the top of the heap (highest priority)
+		serves as a demultiplexer for incoming requests across workers
+			sends incoming tasks to highest priority worker
+			handles updates to tasks by re-arranging the heap
+	Workers{channel to receive work, channel to indicate done with work, # of pending tasks}
+	Requests{workFunc, response chan} sent to workers via request func
+	Main
+		creates pool of workers created
+		creates and starts load balancer
+		creates requests
 */
 
 const num_workers int64 = 4
@@ -41,7 +48,7 @@ func main() {
 		}
 	}
 
-	// make safe and initialize into a heap
+	// make safe and initialize workers into a priority queue (a heap)
 	safe_worker_pool := SafePriorityQueue{pq: worker_pool}
 	heap.Init(&safe_worker_pool.pq)
 	fmt.Printf("worker pool is %v\n", worker_pool)
@@ -62,7 +69,7 @@ func main() {
 	fmt.Println(time_elapsed)
 }
 
-// An Worker is something we manage in a priority queue.
+// A Worker is something we manage in a priority queue.
 type Worker struct {
 	name string // The name of the worker; arbitrary.
 	pending int    // The number of pending items item in the queue.
