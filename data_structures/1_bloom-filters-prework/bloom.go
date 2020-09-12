@@ -98,6 +98,13 @@ func (b *myBloomFilter) add(item string) {
 		fmt.Printf("murmurHashValue for item 'A' is: %d\n", i)
 	}
 	b.data.SetBit(b.data, int(i % BLOOMFILTER_SIZE), 1)
+
+	// apply third hash
+	i = b.blendedHashValue(item)
+	if item == "A" {
+		fmt.Printf("blendedHashValue for item 'A' is: %d\n", i)
+	}
+	b.data.SetBit(b.data, int(i % BLOOMFILTER_SIZE), 1)
 }
 
 func (b *myBloomFilter) fnvHashValue(item string) uint32 {
@@ -112,6 +119,10 @@ func (b *myBloomFilter) murmurHashValue(item string) uint32 {
 	hashResult := []byte(item)
 	m.Write(hashResult)
 	return m.Sum32()
+}
+
+func (b *myBloomFilter) blendedHashValue(item string) uint32 {
+	return b.fnvHashValue(item) + b.murmurHashValue(item)
 }
 
 func (b *myBloomFilter) maybeContains(item string) bool {
@@ -133,7 +144,19 @@ func (b *myBloomFilter) maybeContains(item string) bool {
 		fmt.Printf("isMurmurHashSet is %t\n", isMurmurHashSet)
 		fmt.Printf("b.data.Bit(m) is %d\n", b.data.Bit(m))
 	}
-	return  isFnvHashSet && isMurmurHashSet
+
+	// if using third hash func
+	blended := int(b.blendedHashValue(item))
+	if item == "A" {
+		fmt.Printf("blended is %d\n", m)
+	}
+	isBlendedHashSet := b.data.Bit(blended % BLOOMFILTER_SIZE) != 0
+	if item == "A" {
+		fmt.Printf("isMurmurHashSet is %t\n", isBlendedHashSet)
+		fmt.Printf("b.data.Bit(m) is %d\n", b.data.Bit(blended))
+	}
+	//return  isFnvHashSet && isMurmurHashSet
+	return  isFnvHashSet && isMurmurHashSet && isBlendedHashSet
 }
 
 func (b *myBloomFilter) memoryUsage() int {

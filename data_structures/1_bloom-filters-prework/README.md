@@ -45,3 +45,9 @@ const BLOOMFILTER_SIZE = 280386 	// Elapsed time: 85.720142ms	Memory usage: 3504
 const BLOOMFILTER_SIZE = 300386 	// Elapsed time: 89.715896ms 	Memory usage: 37548 bytes 	False positive rate: 29.70%
 const BLOOMFILTER_SIZE = 600000 	// Elapsed time: 81.917925ms 	Memory usage: 75000 bytes 	False positive rate: 10.56% <-- meets requirements
 ```
+
+#### Observations
+Adding a third, blended hash function, substantially increased the time to run but further decreasedb the false positive rate, highlighting one of the tradeoffs of using more hashes.
+```
+const BLOOMFILTER_SIZE = 600000 	// Elapsed time: 124.68085ms 	Memory usage: 75000 bytes 	False positive rate: 8.88%
+```
