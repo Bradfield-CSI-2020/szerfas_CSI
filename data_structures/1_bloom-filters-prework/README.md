@@ -1,13 +1,13 @@
-#Bloom filters
+# Bloom filters
 
-###Description
+### Description
 Bloom filters are probabilistic data structures offering fast insertion and lookup times, and the ability to check with a value has conclusively not already been inserted and, with some probability, whether or not a value has alraedy been inserted.
 
-###Sources
+### Sources
 * Quick intro and illustration: https://llimllib.github.io/bloomfilter-tutorial/#footnote2
 * In-depth walkthrough of math: http://www.michaelnielsen.org/ddi/why-bloom-filters-work-the-way-they-do/. The section "Summing up Bloom filters" is especially helpful for considering which parameters to use when implementing.
 
-##My implementation
+## My implementation
 
 ### Estimating parameters for our bloom filter:
 Goal: Insert ~2Mb file `/usr/share/dict/words` with over ~230K words to the followign:
