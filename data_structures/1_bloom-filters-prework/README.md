@@ -51,3 +51,5 @@ Adding a third, blended hash function, substantially increased the time to run b
 ```
 const BLOOMFILTER_SIZE = 600000 	// Elapsed time: 124.68085ms 	Memory usage: 75000 bytes 	False positive rate: 8.88%
 ```
+
+time estimate to complete: ~6.5 hours
