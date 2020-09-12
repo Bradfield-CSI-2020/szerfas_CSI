@@ -43,25 +43,25 @@ func (b *trivialBloomFilter) memoryUsage() int {
 }
 
 
-// Estimating parameters for our bloom filter:
-// Goal: 
-// Summary of bloom filters (end of article) at http://www.michaelnielsen.org/ddi/why-bloom-filters-work-the-way-they-do/  suggests the following
-
+//Estimating parameters for our bloom filter:
+//Goal: <100kb memory usage, 15% false positive rate, speed < few seconds
+//Summary of bloom filters (end of article) at http://www.michaelnielsen.org/ddi/why-bloom-filters-work-the-way-they-do/  suggests the following
+//
 //Choose a desired max probability of a false positive, p
 //Choose a ballpark value for n, number of items inserted into the bloom filter
 //Choose a value for m, number of bits used, where m = n/ln(2) * log(1/p)
 //Calculate the optimal value of k, number of hash functions used, where k = ln(1/p).
-
-// for 15% accuracy this is
-// 	n			m			k				p
+//
+//for 15% accuracy this is
+//	n			m			k				p
 //	235886		280,386		1.897119985		0.15
-
-
-// Questions to ask:
-// which hash functions to use? 		A: Ideally fast and independent; fnv and murmur given as examples
-// how many to use?						A: See estimates above. Started with two and made this work, could do more
-// separate bit vector or combined?		A: Literature suggests using a combined bit vector is more memory efficient
-// what bit vector sizes work well?		A: See equations above
+//
+//
+//Questions to ask:
+//which hash functions to use? 		A: Ideally fast and independent; fnv and murmur given as examples
+//how many to use?						A: See estimates above. Started with two and made this work, could do more
+//separate bit vector or combined?		A: Literature suggests using a combined bit vector is more memory efficient
+//what bit vector sizes work well?		A: See equations above
 
 
 
@@ -75,7 +75,7 @@ const BLOOMFILTER_SIZE = 600000 	// Elapsed time: 81.917925ms 	Memory usage: 750
 
 func newMyBloomFilter() *myBloomFilter {
 	var bitVector big.Int
-	bitVector.SetBit(&bitVector, BLOOMFILTER_SIZE, 1)
+	bitVector.SetBit(&bitVector, BLOOMFILTER_SIZE + 1, 1)  // ensures the bitvector is initialized to the right size - we'll never check this final bit
 
 	return &myBloomFilter{
 		data: &bitVector,
