@@ -44,25 +44,8 @@ func (b *trivialBloomFilter) memoryUsage() int {
 }
 
 
-//Estimating parameters for our bloom filter:
-//Goal: <100kb memory usage, 15% false positive rate, speed < few seconds
-//Summary of bloom filters (end of article) at http://www.michaelnielsen.org/ddi/why-bloom-filters-work-the-way-they-do/  suggests the following
-//
-//Choose a desired max probability of a false positive, p
-//Choose a ballpark value for n, number of items inserted into the bloom filter
-//Choose a value for m, number of bits used, where m = n/ln(2) * log(1/p)
-//Calculate the optimal value of k, number of hash functions used, where k = ln(1/p).
-//
-//for 15% accuracy this is
-//	n			m			k				p
-//	235886		280,386		1.897119985		0.15
-//
-//
-//Questions to ask:
-//which hash functions to use? 		A: Ideally fast and independent; fnv and murmur given as examples
-//how many to use?						A: See estimates above. Started with two and made this work, could do more
-//separate bit vector or combined?		A: Literature suggests using a combined bit vector is more memory efficient
-//what bit vector sizes work well?		A: See equations above
+
+
 
 
 
@@ -70,10 +53,10 @@ type myBloomFilter struct {
 	data *big.Int // bit vector
 }
 
-//const BLOOMFILTER_SIZE = 280386 	// Elapsed time: 85.720142ms	Memory usage: 35048 bytes 	False positive rate: 32.35%
-//const BLOOMFILTER_SIZE = 300386 	// Elapsed time: 89.715896ms 	Memory usage: 37548 bytes 	False positive rate: 29.70%
-//const BLOOMFILTER_SIZE = 600000 	// Elapsed time: 81.917925ms 	Memory usage: 75000 bytes 	False positive rate: 10.56% <-- meets requirements!
-const BLOOMFILTER_SIZE = 800000
+//const BLOOMFILTER_SIZE = 280386 	// Elapsed time: 32.021804ms	Memory usage: 35048 bytes 	False positive rate: 32.35%
+//const BLOOMFILTER_SIZE = 300386 	// Elapsed time: 36.116905ms 	Memory usage: 37548 bytes 	False positive rate: 29.70%
+//const BLOOMFILTER_SIZE = 600000 	// Elapsed time: 31.764326ms 	Memory usage: 75000 bytes 	False positive rate: 10.56% <-- meets requirements
+const BLOOMFILTER_SIZE = 800000 	// Elapsed time: 33.212294ms 	Memory usage: 100000 bytes 	False positive rate: 4.55%  <-- maxes size out at 100kb
 
 func newMyBloomFilter() *myBloomFilter {
 	var bitVector big.Int
@@ -86,27 +69,17 @@ func newMyBloomFilter() *myBloomFilter {
 }
 
 func (b *myBloomFilter) add(item string) {
-	// apply first hash
-	fnv := b.fnvHashValue(item)
+	fnv, m, blended := b.getHashValues(item)
+	b.data.SetBit(b.data, int(fnv % BLOOMFILTER_SIZE), 1)
+	b.data.SetBit(b.data, int(m % BLOOMFILTER_SIZE), 1)
+	b.data.SetBit(b.data, int(blended % BLOOMFILTER_SIZE), 1)
 	if item == "A" {
 		fmt.Printf("fnvHashValue for item 'A' is: %d\n", fnv)
-	}
-	b.data.SetBit(b.data, int(fnv % BLOOMFILTER_SIZE), 1)
-
-	// apply second hash
-	m := b.murmurHashValue(item)
-	if item == "A" {
 		fmt.Printf("murmurHashValue for item 'A' is: %d\n", m)
-	}
-	b.data.SetBit(b.data, int(m % BLOOMFILTER_SIZE), 1)
-
-	// apply third hash
-	//blended := b.blendedHashValue(item)
-	blended := fnv + m
-	if item == "A" {
 		fmt.Printf("blendedHashValue for item 'A' is: %d\n", blended)
 	}
-	b.data.SetBit(b.data, int(blended % BLOOMFILTER_SIZE), 1)
+
+
 }
 
 func (b *myBloomFilter) fnvHashValue(item string) uint32 {
@@ -121,7 +94,7 @@ func (b *myBloomFilter) murmurHashValue(item string) uint32 {
 	//hashResult := []byte(item)
 	//m.Write(hashResult)
 	//return m.Sum32()
-	return murmur.StringSum32(item)  // for some reasons this is significantly faster - shaves off almost 100ms when using blended hash
+	return murmur.StringSum32(item)  // for some reasons this is significantly faster - shaves off almost 100ms when using blended hash vs above code
 }
 
 func (b *myBloomFilter) blendedHashValue(item string) uint32 {
@@ -129,42 +102,39 @@ func (b *myBloomFilter) blendedHashValue(item string) uint32 {
 }
 
 func (b *myBloomFilter) maybeContains(item string) bool {
-	f := b.fnvHashValue(item)
-	if item == "A" {
-		fmt.Printf("f is %d\n", f)
-	}
+	f, m, blended := b.getHashValues(item)
+
 	isFnvHashSet := b.data.Bit(int(f % BLOOMFILTER_SIZE)) != 0
+	isMurmurHashSet := b.data.Bit(int(m % BLOOMFILTER_SIZE)) != 0
+	isBlendedHashSet := b.data.Bit(int(blended % BLOOMFILTER_SIZE)) != 0
 	if item == "A" {
 		fmt.Printf("isFnvHashSet is %t\n", isFnvHashSet)
 		fmt.Printf("b.data.Bit(f) is %d\n", b.data.Bit(int(f)))
-	}
-	m := b.murmurHashValue(item)
-	if item == "A" {
-		fmt.Printf("m is %d\n", m)
-	}
-	isMurmurHashSet := b.data.Bit(int(m % BLOOMFILTER_SIZE)) != 0
-	if item == "A" {
 		fmt.Printf("isMurmurHashSet is %t\n", isMurmurHashSet)
 		fmt.Printf("b.data.Bit(m) is %d\n", b.data.Bit(int(m)))
-	}
-
-	// if using third hash func
-	//blended := int(b.blendedHashValue(item))
-	blended := f + m
-	if item == "A" {
-		fmt.Printf("blended is %d\n", blended)
-	}
-	isBlendedHashSet := b.data.Bit(int(blended % BLOOMFILTER_SIZE)) != 0
-	if item == "A" {
-		fmt.Printf("isMurmurHashSet is %t\n", isBlendedHashSet)
+		fmt.Printf("isBlendedHashSet is %t\n", isBlendedHashSet)
 		fmt.Printf("b.data.Bit(m) is %d\n", b.data.Bit(int(blended)))
 	}
-	//return  isFnvHashSet && isMurmurHashSet
 	return  isFnvHashSet && isMurmurHashSet && isBlendedHashSet
 }
 
+
+func (b *myBloomFilter) getHashValues(item string) (fnv uint32, murmur uint32, blended uint32) {
+
+	fnv = b.fnvHashValue(item)
+	murmur = b.murmurHashValue(item)
+	blended = fnv + murmur
+
+	if item == "A" {
+		fmt.Printf("f is %d\n", fnv)
+		fmt.Print("m is %d\n", murmur)
+		fmt.Print("blended is %d\n", blended)
+	}
+	return
+}
+
+
 func (b *myBloomFilter) memoryUsage() int {
-	//return binary.Size(b.data)
 	return b.data.BitLen() / 8  // will return in bytes
 }
 
