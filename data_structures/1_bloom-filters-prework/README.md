@@ -62,4 +62,4 @@ four hash calls, three values:      const BLOOMFILTER_SIZE = 600000 	// Elapsed 
 two hash calls, two values:         const BLOOMFILTER_SIZE = 600000     // Elapsed time: 32.909853ms    Memory usage: 75000 bytes   False positive rate: 8.88%
 ```
 
-time estimate to complete: ~6.5 hours
+time estimate to complete: ~6.5 hours, 7.5 hours after refactor and optimization
