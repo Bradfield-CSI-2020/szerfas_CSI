@@ -62,4 +62,6 @@ four hash calls, three values:      const BLOOMFILTER_SIZE = 600000 	// Elapsed 
 two hash calls, two values:         const BLOOMFILTER_SIZE = 600000     // Elapsed time: 32.909853ms    Memory usage: 75000 bytes   False positive rate: 8.88%
 ```
 
+What I'd like to try next: additional blending - could I blend with a multiple to further decrease the false positive rate?
+
 time estimate to complete: ~6.5 hours, 7.5 hours after refactor and optimization
