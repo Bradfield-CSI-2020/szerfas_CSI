@@ -4,7 +4,8 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 	"math/big"
-	"github.com/spaolacci/murmur3"
+	//"github.com/spaolacci/murmur3"
+	murmur "github.com/twmb/murmur3"
 	"fmt"
 )
 
@@ -71,11 +72,13 @@ type myBloomFilter struct {
 
 //const BLOOMFILTER_SIZE = 280386 	// Elapsed time: 85.720142ms	Memory usage: 35048 bytes 	False positive rate: 32.35%
 //const BLOOMFILTER_SIZE = 300386 	// Elapsed time: 89.715896ms 	Memory usage: 37548 bytes 	False positive rate: 29.70%
-const BLOOMFILTER_SIZE = 600000 	// Elapsed time: 81.917925ms 	Memory usage: 75000 bytes 	False positive rate: 10.56% <-- meets requirements!
+//const BLOOMFILTER_SIZE = 600000 	// Elapsed time: 81.917925ms 	Memory usage: 75000 bytes 	False positive rate: 10.56% <-- meets requirements!
+const BLOOMFILTER_SIZE = 800000
 
 func newMyBloomFilter() *myBloomFilter {
 	var bitVector big.Int
 	bitVector.SetBit(&bitVector, BLOOMFILTER_SIZE + 1, 1)  // ensures the bitvector is initialized to the right size - we'll never check this final bit
+	fmt.Printf("bit vector initialized to length: %d\n", bitVector.BitLen())
 
 	return &myBloomFilter{
 		data: &bitVector,
@@ -115,10 +118,11 @@ func (b *myBloomFilter) fnvHashValue(item string) uint32 {
 }
 
 func (b *myBloomFilter) murmurHashValue(item string) uint32 {
-	m := murmur3.New32()
-	hashResult := []byte(item)
-	m.Write(hashResult)
-	return m.Sum32()
+	//m := murmur3.New32()
+	//hashResult := []byte(item)
+	//m.Write(hashResult)
+	//return m.Sum32()
+	return murmur.StringSum32(item)  // for some reasons this is significantly faster - shaves off almost 100ms when using blended hash
 }
 
 func (b *myBloomFilter) blendedHashValue(item string) uint32 {
