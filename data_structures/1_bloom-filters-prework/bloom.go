@@ -86,28 +86,27 @@ func newMyBloomFilter() *myBloomFilter {
 }
 
 func (b *myBloomFilter) add(item string) {
-	var i uint32
-
 	// apply first hash
-	i = b.fnvHashValue(item)
+	fnv := b.fnvHashValue(item)
 	if item == "A" {
-		fmt.Printf("fnvHashValue for item 'A' is: %d\n", i)
+		fmt.Printf("fnvHashValue for item 'A' is: %d\n", fnv)
 	}
-	b.data.SetBit(b.data, int(i % BLOOMFILTER_SIZE), 1)
+	b.data.SetBit(b.data, int(fnv % BLOOMFILTER_SIZE), 1)
 
 	// apply second hash
-	i = b.murmurHashValue(item)
+	m := b.murmurHashValue(item)
 	if item == "A" {
-		fmt.Printf("murmurHashValue for item 'A' is: %d\n", i)
+		fmt.Printf("murmurHashValue for item 'A' is: %d\n", m)
 	}
-	b.data.SetBit(b.data, int(i % BLOOMFILTER_SIZE), 1)
+	b.data.SetBit(b.data, int(m % BLOOMFILTER_SIZE), 1)
 
 	// apply third hash
-	i = b.blendedHashValue(item)
+	//blended := b.blendedHashValue(item)
+	blended := fnv + m
 	if item == "A" {
-		fmt.Printf("blendedHashValue for item 'A' is: %d\n", i)
+		fmt.Printf("blendedHashValue for item 'A' is: %d\n", blended)
 	}
-	b.data.SetBit(b.data, int(i % BLOOMFILTER_SIZE), 1)
+	b.data.SetBit(b.data, int(blended % BLOOMFILTER_SIZE), 1)
 }
 
 func (b *myBloomFilter) fnvHashValue(item string) uint32 {
@@ -130,34 +129,35 @@ func (b *myBloomFilter) blendedHashValue(item string) uint32 {
 }
 
 func (b *myBloomFilter) maybeContains(item string) bool {
-	f := int(b.fnvHashValue(item))
+	f := b.fnvHashValue(item)
 	if item == "A" {
 		fmt.Printf("f is %d\n", f)
 	}
-	isFnvHashSet := b.data.Bit(f % BLOOMFILTER_SIZE) != 0
+	isFnvHashSet := b.data.Bit(int(f % BLOOMFILTER_SIZE)) != 0
 	if item == "A" {
 		fmt.Printf("isFnvHashSet is %t\n", isFnvHashSet)
-		fmt.Printf("b.data.Bit(f) is %d\n", b.data.Bit(f))
+		fmt.Printf("b.data.Bit(f) is %d\n", b.data.Bit(int(f)))
 	}
-	m := int(b.murmurHashValue(item))
+	m := b.murmurHashValue(item)
 	if item == "A" {
 		fmt.Printf("m is %d\n", m)
 	}
-	isMurmurHashSet := b.data.Bit(m % BLOOMFILTER_SIZE) != 0
+	isMurmurHashSet := b.data.Bit(int(m % BLOOMFILTER_SIZE)) != 0
 	if item == "A" {
 		fmt.Printf("isMurmurHashSet is %t\n", isMurmurHashSet)
-		fmt.Printf("b.data.Bit(m) is %d\n", b.data.Bit(m))
+		fmt.Printf("b.data.Bit(m) is %d\n", b.data.Bit(int(m)))
 	}
 
 	// if using third hash func
-	blended := int(b.blendedHashValue(item))
+	//blended := int(b.blendedHashValue(item))
+	blended := f + m
 	if item == "A" {
-		fmt.Printf("blended is %d\n", m)
+		fmt.Printf("blended is %d\n", blended)
 	}
-	isBlendedHashSet := b.data.Bit(blended % BLOOMFILTER_SIZE) != 0
+	isBlendedHashSet := b.data.Bit(int(blended % BLOOMFILTER_SIZE)) != 0
 	if item == "A" {
 		fmt.Printf("isMurmurHashSet is %t\n", isBlendedHashSet)
-		fmt.Printf("b.data.Bit(m) is %d\n", b.data.Bit(blended))
+		fmt.Printf("b.data.Bit(m) is %d\n", b.data.Bit(int(blended)))
 	}
 	//return  isFnvHashSet && isMurmurHashSet
 	return  isFnvHashSet && isMurmurHashSet && isBlendedHashSet
