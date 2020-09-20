@@ -65,3 +65,20 @@ two hash calls, two values:         const BLOOMFILTER_SIZE = 600000     // Elaps
 What I'd like to try next: additional blending - could I blend with a multiple to further decrease the false positive rate?
 
 time estimate to complete: ~6.5 hours, 7.5 hours after refactor and optimization
+
+
+##### When to use
+In some ways, it's like a cache: 
+* I can move something up the memory hierarchy
+* If I want to ship something and don't want to ship the full data with it
+
+Clearly a bloom filter can save you time, but it may also give you some privacy:
+* Imagine there's a server knows about the transactions coming in. You want it to send you data when a transaction is relevant to you.
+One way is to ask the server to send along data that matches certain criteria.
+Downside to that is now the server knows exact details about you and relevant transactions you might not be want it to.
+Another way to do it is to ask the server to hash criteria data and send transaction to you according to some bloom filter.
+You and the server can agree on hash functions, then you send a bit vector and the server sends only transactions that collide with that bit vector after hashing.
+The server will send you plenty of data on false positives, but far less than if sent you everything.
+* Similarly, bloom filters to check for leaked password: Someone holding a password dump could receive a bit field from you and run it against the existing bloom filter of the dump.
+
+ 
