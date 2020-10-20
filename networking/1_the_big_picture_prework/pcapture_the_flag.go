@@ -120,7 +120,7 @@ func CountPackets(tcpdump []byte) int {
 
 	fmt.Printf("ok\n")
 	response := bytes.Join(httpBytes, []byte{})
-	sort.Slice(response, func(i, j int) bool { return response[i] < response[j] })
+	//sort.Slice(response, func(i, j int) bool { return response[i] < response[j] })
 	fmt.Println(string(response[:1000]))
 
 	// Split into HTTP header and body
