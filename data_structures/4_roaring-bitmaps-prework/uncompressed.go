@@ -41,6 +41,30 @@ func (b *uncompressedBitmap) Set(x uint32) {
 
 func (b *uncompressedBitmap) Union(other *uncompressedBitmap) *uncompressedBitmap {
 	var data []uint64
+	currentLength := len(b.data)
+	incomingLength := len(other.data)
+	if currentLength == incomingLength {
+		data = make([]uint64, currentLength)
+		for i, val := range b.data {
+			data[i] = val | other.data[i]
+		}
+	} else if currentLength < incomingLength {
+		data = make([]uint64, incomingLength)
+		for i, val := range b.data {
+			data[i] = val | other.data[i]
+		}
+		for i, otherVal := range other.data[currentLength:] {
+			data[i] = otherVal
+		}
+	} else if currentLength > incomingLength {
+		data = make([]uint64, currentLength)
+		for i, val := range other.data {
+			data[i] = val | other.data[i]
+		}
+		for i, otherVal := range b.data[incomingLength:] {
+			data[i] = otherVal
+		}
+	}
 	return &uncompressedBitmap{
 		data: data,
 	}
@@ -48,6 +72,30 @@ func (b *uncompressedBitmap) Union(other *uncompressedBitmap) *uncompressedBitma
 
 func (b *uncompressedBitmap) Intersect(other *uncompressedBitmap) *uncompressedBitmap {
 	var data []uint64
+	currentLength := len(b.data)
+	incomingLength := len(other.data)
+	if currentLength == incomingLength {
+		data = make([]uint64, currentLength)
+		for i, val := range b.data {
+			data[i] = val & other.data[i]
+		}
+	} else if currentLength < incomingLength {
+		data = make([]uint64, incomingLength)
+		for i, val := range b.data {
+			data[i] = val & other.data[i]
+		}
+		for i, otherVal := range other.data[currentLength:] {
+			data[i] = otherVal
+		}
+	} else if currentLength > incomingLength {
+		data = make([]uint64, currentLength)
+		for i, val := range other.data {
+			data[i] = val & other.data[i]
+		}
+		for i, otherVal := range b.data[incomingLength:] {
+			data[i] = otherVal
+		}
+	}
 	return &uncompressedBitmap{
 		data: data,
 	}
