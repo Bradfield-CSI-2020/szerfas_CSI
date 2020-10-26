@@ -63,6 +63,7 @@ func handleAndEchoConnection(localSocketFD int, destSocket syscall.Sockaddr) {
 }
 
 func handleAndForwardConnection(clientSocketFD int, clientSocket syscall.Sockaddr) {
+	defer syscall.Close(clientSocketFD)
 	// create a new socket
 	serverSocketFD, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, syscall.IPPROTO_TCP)
 	check(err)
@@ -77,24 +78,40 @@ func handleAndForwardConnection(clientSocketFD int, clientSocket syscall.Sockadd
 	serverSocket := syscall.SockaddrInet4{Port: serverPort, Addr: serverAddr}
 
 	err = syscall.Connect(serverSocketFD, &serverSocket)
+	defer syscall.Close(serverSocketFD)
 	fmt.Printf("connected to server\n")
 
 	resp_buffer := make([]byte, 1500)
-	for {
-		bytesReceived, _, err := syscall.Recvfrom(clientSocketFD, resp_buffer, 0)
-		check(err)
-		//fmt.Printf("error is: %s\n", err)
-		packet := resp_buffer[:bytesReceived]
-		fmt.Printf("# bytes received from client: %d\n", bytesReceived)
-		fmt.Printf("packet: %s\n", packet)
-		err = syscall.Sendto(serverSocketFD, packet, 0, &serverSocket)
-		check(err)
-		bytesReceived, _, err = syscall.Recvfrom(serverSocketFD, resp_buffer, 0)
-		check(err)
-		packet = resp_buffer[:bytesReceived]
-		fmt.Printf("# bytes received from server: %d\n", bytesReceived)
-		fmt.Printf("packet: %s\n", packet)
-		err = syscall.Sendto(clientSocketFD, packet, 0, clientSocket)
-		check(err)
-	}
+	//for {
+	//	bytesReceived, _, err := syscall.Recvfrom(clientSocketFD, resp_buffer, 0)
+	//	check(err)
+	//	//fmt.Printf("error is: %s\n", err)
+	//	packet := resp_buffer[:bytesReceived]
+	//	fmt.Printf("# bytes received from client: %d\n", bytesReceived)
+	//	fmt.Printf("packet: %s\n", packet)
+	//	err = syscall.Sendto(serverSocketFD, packet, 0, &serverSocket)
+	//	check(err)
+	//	bytesReceived, _, err = syscall.Recvfrom(serverSocketFD, resp_buffer, 0)
+	//	check(err)
+	//	packet = resp_buffer[:bytesReceived]
+	//	fmt.Printf("# bytes received from server: %d\n", bytesReceived)
+	//	fmt.Printf("packet: %s\n", packet)
+	//	err = syscall.Sendto(clientSocketFD, packet, 0, clientSocket)
+	//	check(err)
+	//}
+	bytesReceived, _, err := syscall.Recvfrom(clientSocketFD, resp_buffer, 0)
+	check(err)
+	//fmt.Printf("error is: %s\n", err)
+	packet := resp_buffer[:bytesReceived]
+	fmt.Printf("# bytes received from client: %d\n", bytesReceived)
+	fmt.Printf("packet: %s\n", packet)
+	err = syscall.Sendto(serverSocketFD, packet, 0, &serverSocket)
+	check(err)
+	bytesReceived, _, err = syscall.Recvfrom(serverSocketFD, resp_buffer, 0)
+	check(err)
+	packet = resp_buffer[:bytesReceived]
+	fmt.Printf("# bytes received from server: %d\n", bytesReceived)
+	fmt.Printf("packet: %s\n", packet)
+	err = syscall.Sendto(clientSocketFD, packet, 0, clientSocket)
+	check(err)
 }
