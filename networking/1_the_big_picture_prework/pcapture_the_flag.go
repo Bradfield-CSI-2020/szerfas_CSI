@@ -121,13 +121,14 @@ func CountPackets(tcpdump []byte) int {
 	fmt.Printf("ok\n")
 	response := bytes.Join(httpBytes, []byte{})
 	//sort.Slice(response, func(i, j int) bool { return response[i] < response[j] })
-	fmt.Println(string(response[:1000]))
+	//fmt.Println(string(response[:1000]))
 
 	// Split into HTTP header and body
 	parts := bytes.SplitN(response, []byte{'\r', '\n', '\r', '\n'}, 2)
 
-	fmt.Println(parts[0])
+	//fmt.Println(parts[0])
 	fmt.Println(string(parts[0]))
+	fmt.Println(parts[1])
 
 	// Write output
 	out, _ := os.Create("out.jpeg")
