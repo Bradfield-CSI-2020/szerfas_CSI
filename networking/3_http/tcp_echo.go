@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"regexp"
+	"strings"
 	"syscall"
+	"time"
 )
 
 // create socket
@@ -18,7 +21,14 @@ func check(err error) {
 	}
 }
 
+type CacheEntry struct {
+	lastModified time.Time
+	object string
+}
+
 func main () {
+	cache := make(map[string]CacheEntry)
+
 	socket, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, syscall.IPPROTO_TCP)
 	check(err)
 
@@ -40,7 +50,18 @@ func main () {
 		check(err)
 		// call go routine to execute listening and sending on the new socket
 		//go handleAndEchoConnection(localSocketFileDescriptor, destSocket)
-		go handleAndForwardConnection(localSocketFileDescriptor, destSocket)
+		cacheValue, cacheFlag := handleAndForwardConnection(localSocketFileDescriptor, destSocket, cache)
+		if cacheFlag {
+			requestLineComponents := strings.Fields(cacheValue.requestLine)
+			lmTime, err := time.Parse(time.RFC1123, cacheValue.headerLines["Date"])
+			check(err)
+			entry := CacheEntry{
+				lastModified: lmTime,
+				object: cacheValue.body,
+			}
+			cache[requestLineComponents[1]] = entry
+		}
+
 		fmt.Printf("connection accepted\n")
 		fmt.Printf("starting new routine at socket: %d\n with destAddr: %+v\n", socket, destSocket)
 	}
@@ -62,7 +83,7 @@ func handleAndEchoConnection(localSocketFD int, destSocket syscall.Sockaddr) {
 	}
 }
 
-func handleAndForwardConnection(clientSocketFD int, clientSocket syscall.Sockaddr) {
+func handleAndForwardConnection(clientSocketFD int, clientSocket syscall.Sockaddr, cache map[string]CacheEntry) (cachEntry HTTPPacket, cacheFlag bool) {
 	defer syscall.Close(clientSocketFD)
 	// create a new socket
 	serverSocketFD, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, syscall.IPPROTO_TCP)
@@ -99,12 +120,30 @@ func handleAndForwardConnection(clientSocketFD int, clientSocket syscall.Sockadd
 	//	err = syscall.Sendto(clientSocketFD, packet, 0, clientSocket)
 	//	check(err)
 	//}
+	cacheFlag = false
 	bytesReceived, _, err := syscall.Recvfrom(clientSocketFD, resp_buffer, 0)
 	check(err)
 	//fmt.Printf("error is: %s\n", err)
 	packet := resp_buffer[:bytesReceived]
 	fmt.Printf("# bytes received from client: %d\n", bytesReceived)
 	fmt.Printf("packet: %s\n", packet)
+	httpPacket :=parseHTTPPacket(string(packet))
+	if host, ok := httpPacket.headerLines["Host"]; ok {
+		// hardcoding cache for localhost
+		if strings.HasPrefix(host, "localhost") {
+			cacheFlag = true
+			if entry, ok := cache[host]; ok {
+				// todo: reach out to server and see if last modified
+				// todo: set headers on response
+				// send object
+				err := syscall.Sendto(clientSocketFD, []byte(entry.object), 0, clientSocket)
+				check(err)
+				fmt.Printf("sent data from cache: %s\n", entry.object)
+				return HTTPPacket{}, !cacheFlag
+			}
+		}
+	}
+
 	err = syscall.Sendto(serverSocketFD, packet, 0, &serverSocket)
 	check(err)
 	bytesReceived, _, err = syscall.Recvfrom(serverSocketFD, resp_buffer, 0)
@@ -112,6 +151,43 @@ func handleAndForwardConnection(clientSocketFD int, clientSocket syscall.Sockadd
 	packet = resp_buffer[:bytesReceived]
 	fmt.Printf("# bytes received from server: %d\n", bytesReceived)
 	fmt.Printf("packet: %s\n", packet)
+	httpPacket =parseHTTPPacket(string(packet))
 	err = syscall.Sendto(clientSocketFD, packet, 0, clientSocket)
 	check(err)
+	if cacheFlag {
+		return httpPacket, true
+	} else {
+		return HTTPPacket{}, cacheFlag
+	}
+}
+
+type HTTPPacket struct {
+	requestLine string
+	headerLines map[string]string
+	body string
+}
+
+func parseHTTPPacket(p string) HTTPPacket {
+
+	endOfRequestLine, _ := regexp.Compile("\r\n")
+	endOfRequestLineLoc := endOfRequestLine.FindStringIndex(p)
+	fmt.Println(endOfRequestLine.FindStringIndex(p))
+	endOfHeaderLines, _ := regexp.Compile("\r\n\r\n")
+	endOfHeaderLinesLoc := endOfHeaderLines.FindStringIndex(p)
+	headers := p[endOfRequestLineLoc[1]:endOfHeaderLinesLoc[0]]
+	headersMap := make(map[string]string)
+	for _, v := range strings.Split(headers, "\r\n") {
+		split, _ := regexp.Compile(":")
+		splitLoc := split.FindStringIndex(v)
+		key := v[:splitLoc[0]]
+		val := v[splitLoc[1]:]
+		headersMap[key] = val
+	}
+
+	fmt.Println(endOfHeaderLines.FindStringIndex(p))
+	return HTTPPacket{
+		requestLine: p[:endOfRequestLineLoc[0]],
+		headerLines: headersMap,
+		body: p[endOfHeaderLinesLoc[1]:],
+	}
 }
