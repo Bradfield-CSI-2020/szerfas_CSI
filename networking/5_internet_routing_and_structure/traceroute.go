@@ -15,6 +15,11 @@ import (
 	// set TTL of datagram -- can leave this until after can send and receive response from google.com
 	// loop through sum number sending each datagram, noting response, and incrementing TTL
 
+// todo:
+//Parse responses filter by from address, sequence number
+//Keep track of time to record RTT between my machine and every node
+//Make hardcoded variables more dynamic - # of pings, target address, sequenceNum, etc.
+
 
 func check(err error) {
 	if err != nil {
