@@ -13,16 +13,28 @@ As you read, please keep in mind the following discussion questions and prepare 
 `TODO: Ankify the following`
 
 * What's meant by the quote "Do not communicate by sharing memory; instead, share memory by communicating."? What are some advantages and disadvantages of each approach?
-  >Concurrent programming often involves multiple threads sharing access to memory. This can create data races that (I believe) are typically resolved via locks. Go takes an alternative approach: go routines do NOT have access to shared memory, but instead pass data around through channels. In this way, it is only by communicating that go routines can share memory -- they CANNOT communicate by using shared memory. The primary advantage of this is that is abstracts away a lot of the complexity of managing concurrent threads (e.g., locking and unlocking shared memory). **I'm not sure what the disadvantages are?**
+  > Concurrent programming often involves multiple threads sharing access to memory. This can create data races that (I believe) are typically resolved via locks. Go takes an alternative approach: go routines have access to shared memory, but it is recommended to instead pass data around through channels. In this way, it is only by communicating that go routines can share memory -- they CANNOT communicate by using shared memory. The primary advantage of this is that is abstracts away a lot of the complexity of managing concurrent threads (e.g., locking and unlocking shared memory). 
+  > **I'm not sure what the disadvantages are?** Could be tedious to use channels everywhere - there are places in which it's simpler to use a mutex. Example:
+  >   ![img.png](img.png)
+  > 
+  > In a sense, channels "minimize the scope" of what our code might affect
 * What's the difference between a goroutine and a "thread"? How many goroutines would you expect a typical laptop to support (order of magnitude)?
-  >A goroutine is a function run concurrently with other functions in the same address space. They're I/O multiplexed onto various OS threads, which while run in the context of a single process, are scheduled by the OS kernel (whereas goroutines are scheduled by the go application). A typical laptop can support tens of thousands or hundreds of thousands of goroutines. 
+  >A goroutine is a function run concurrently with other functions in the same address space. They're I/O multiplexed onto various OS threads, which while run in the context of a single process, are scheduled by the OS kernel (whereas goroutines are scheduled by the go application). A typical laptop can support tens of thousands or hundreds of thousands of goroutines.
+  > ![img_1.png](img_1.png)
+  > Performance benefits:
+  > * Various optimizations: for example, the Go program is smart enough to just copy the variable from one goroutine to another rather than "going across the channel" or engaging in interprocess communication. You're just copying from one address (from within a goroutines stack) to the next
+  > * Switching between goroutines is very fast.
+  > * A goroutine requires less system resources than a goroutine
+  > * For all of these: Why? Have to hand off responsibility to the OS, which incurs an overhead
 * What's the difference between a buffered and an unbuffered channel, and when would you want to use each?
   >An unbuffered channel blocks on send until a receiving goroutine receives at the same time. This effectively synchronizes concurrent programs. A buffered program only blocks on sending if the buffer is full, and blocks on receiving if the buffer is empty.
 * When would you want to send on a channel vs. close a channel?
   >You only need to close on a channel when the receiving goroutine needs to know the channel is closed. This is true when using the `for i := range some_channel` for-loop syntax which pulls from a channel until it retrieves indication that it has been closed. This allows buffered channels to synchronize communication in a different way - a bit like a semaphore limiting throughput.
 * What do `select`, `sync.Once`, and `sync.WaitGroup` do? What are some examples of when you would use each of these concurrency primitives?
   >`select` functions a bit like a `switch` statement by passing control to logic that is nonblocked by a channel communication statement (send or receive). For example, you a goroutine may function as a worker that can handle different jobs. A `select` statement will set the worker to work on any job that comes off any of its assigned queues.
-  > 
+  > `sync.Once` offers a way to call a function f within a goroutine that will be called only once, regardless of how many other goroutines call that same instance of once.Sync(f). The value of that singluar call to f  will be used across all goroutines.
+  > sync.WaitGroup allows us to add multiple goroutines to a group, and it's only once they're finished that the group will unblock on the method func (*WaitGroup) Wait
+  
 * How does the idea of "happens before" help us reason about correctness in concurrent programs? What's a situation where neither "A happens before B" nor "B happens before A"?
 
 * Questions for class
