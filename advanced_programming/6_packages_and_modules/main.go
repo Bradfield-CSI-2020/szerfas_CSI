@@ -1,6 +1,4 @@
-package main
-
-import "fmt"
+package stephencrypt
 
 //const KEY = `STEPHEN`
 
@@ -24,9 +22,9 @@ func StephenDecrypt(cipherText string) string {
 	return result
 }
 
-func main() {
-	input := "aaa"
-	fmt.Printf("input text: %s\n", input)
-	fmt.Printf("ciphered text: %s\n", StephenCrypt(input))
-	fmt.Printf("decciphereed text: %s\n", StephenDecrypt(StephenCrypt(input)))
-}
+//func main() {
+//	input := "aaa"
+//	fmt.Printf("input text: %s\n", input)
+//	fmt.Printf("ciphered text: %s\n", StephenCrypt(input))
+//	fmt.Printf("decciphereed text: %s\n", StephenDecrypt(StephenCrypt(input)))
+//}
