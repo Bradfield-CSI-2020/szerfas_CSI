@@ -1,7 +1,6 @@
 package main
 
 /*
-#cgo CFLAGS: -I/Users/szerfas/src/bradfield/szerfas_CSI/advanced_programming/8_low_level_programming_and_FFIs/leveldb_in_go/leveldb/include
 #cgo LDFLAGS: -L/usr/local/Cellar/leveldb/1.22/lib -lleveldb
 #include "leveldb/c.h"
  */
@@ -36,10 +35,10 @@ func (db *DB) Open() {
 	db.db = C.leveldb_open(options, name, &errStr)
 }
 
-func (db *DB)  Put(key []byte, val []byte) C.leveldb_put {
-	C.leveldb_put()
-	(leveldb_t* db, const leveldb_writeoptions_t* options, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);
-}
+//func (db *DB)  Put(key []byte, val []byte) C.leveldb_put {
+//	C.leveldb_put()
+//	//(leveldb_t* db, const leveldb_writeoptions_t* options, const char* key, size_t keylen, const char* val, size_t vallen, char** errptr);
+//}
 
 /*
 Questions:
