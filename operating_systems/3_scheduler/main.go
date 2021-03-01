@@ -58,7 +58,7 @@ func main() {
 	// in all cases, record and print to stdoutput how the child process terminated
 	procAttr := &syscall.ProcAttr{}
 	fmt.Printf("spawning a child process that will sleep for 3s.\nWould you like to send a kill signal (y/n)?\n")
-	childPid, err := syscall.ForkExec("/bin/sleep", []string{"5"}, procAttr)
+	childPid, err := syscall.ForkExec("/bin/sleep", []string{"/bin/sleep", "5"}, procAttr)
 	fmt.Printf("child_pid is: %d\n", childPid)
 	if err != nil {
 		fmt.Printf("Received error in forking: %s\n", err)
