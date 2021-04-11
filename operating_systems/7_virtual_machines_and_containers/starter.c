@@ -63,7 +63,6 @@ int child(void *arg) {
   // limit the number of processes that will work in this cgroup
   fd = open("/sys/fs/cgroup/pids/dokker/pids.max", O_RDWR | O_TRUNC);
   if (fd == -1) printf("Errno: %d\n", errno);
-  // limit to just one c group for testing
   bytes = dprintf(fd, "%d\n", 5);
   printf("%d bytes written\n", bytes);
   if (bytes == -1) printf("Errno: %d\n", errno);
