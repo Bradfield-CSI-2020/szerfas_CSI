@@ -1,0 +1,11 @@
+syntax = "proto3";
+package encoding;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "encodingpb";
+
+message arbitraryString {
+  string key = 1;
+  string val = 2;
+}
