@@ -18,12 +18,18 @@ func newDbService(connection string) *dbService {
 	}
 }
 
-func (d *dbService) logState() {
+func (d *dbService) logStateLock() {
 	d.lock.RLock()
 	defer d.lock.RUnlock()
 
+	d.logState()
+}
+
+
+func (d *dbService) logState() {
 	fmt.Printf("connection %q is healthy\n", d.connection)
 }
+
 
 func (d *dbService) takeSnapshot() {
 	d.lock.RLock()
@@ -34,7 +40,8 @@ func (d *dbService) takeSnapshot() {
 	// Simulate slow operation
 	time.Sleep(time.Second)
 
-	d.logState()
+	//d.logStateLock() // the lock.RLock call in this function will see HOL blocking behind the lock.Lock call on line 48
+	d.logState()  // we can use a solution where we do not call a second RLock, here, causing the Lock to wait until takeSnapshot returns. Or we could release the Rlock() on line 35 and let the updateConnection (or any concurrent function) have access before we log our state.
 }
 
 func (d *dbService) updateConnection(connection string) {
