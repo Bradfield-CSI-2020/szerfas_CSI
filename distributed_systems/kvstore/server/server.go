@@ -21,7 +21,10 @@ func isError(e error) {
 // global variables -- may want to pass these down through functions instead
 var dataStore map[string]string
 var storageFile *os.File
-
+var leadermode bool
+var connections = make([]net.Conn, 0)
+// used for sync connections with follower when in leadermode
+var respBuf *bufio.Reader
 
 func main() {
 	num, address := parseNumAddressFromArgs()
@@ -45,7 +48,6 @@ func main() {
 
 func parseNumAddressFromArgs() (num int, address string) {
 	args := os.Args[1:]
-	// the first argument is a server number. No number or 0 indicates a leader. Every other number indicates a follower
 	var err error
 	if len(args) == 0 {
 		num = 0
@@ -58,37 +60,61 @@ func parseNumAddressFromArgs() (num int, address string) {
 }
 
 func handleConnection(conn net.Conn) {
+	fmt.Printf("received connection with localAddr: %s and remoteAddr: %s\n", conn.LocalAddr(), conn.RemoteAddr())
 	inputBuf := bufio.NewReader(conn)
+
 
 	for {
 		line, err := inputBuf.ReadString('\n')
-		//fmt.Printf("input received: %s", line)
+		isError(err)
+		fmt.Printf("input received: %s", line)
 
 		args := strings.Fields(line)
 
-		if len(args) != 2 || (args[0] != "set" && args[0] != "get") {
-			msg := "Invalid command. Must be of form 'set foo=bar' or 'get foo'. Please try again\n"
-			os.Stderr.WriteString(msg)
-			conn.Write([]byte(msg))
-		}
+		switch {
+		case args[0] == "set":
+			if len(args) != 2 {
+				msg := "Invalid command. Must be of form 'set foo=bar'. Please try again\n"
+				os.Stderr.WriteString(msg)
+				conn.Write([]byte(msg))
+				continue
+			}
 
-		if len(args) == 2 {
-			if args[0] == "set" {
-				kv := strings.Split(args[1], "=")
-				key := kv[0]
-				val := kv[1]
-				err = Set(key, val)
-				if err != nil {
-					msg := fmt.Sprintf("Failed to set key '%s' with value '%s'. Error: %s\n", key, val, err)
-					fmt.Printf(msg)
-					conn.Write([]byte(msg))
-				} else {
-					msg := fmt.Sprintf("Successfully set key '%s' with value '%s'\n", key, val)
-					fmt.Printf(msg)
-					conn.Write([]byte(msg))
+			kv := strings.Split(args[1], "=")
+			key := kv[0]
+			val := kv[1]
+			err := Set(key, val)
+			if err != nil {
+				msg := fmt.Sprintf("Failed to set key '%s' with value '%s'. Error: %s\n", key, val, err)
+				fmt.Printf(msg)
+				conn.Write([]byte(msg))
+				continue
+			}
+
+			if leadermode {
+				// this is statement-based replication which is not ideal, but fine for MVP
+				msg := []byte(line)
+				_, err = connections[0].Write(msg)
+				isError(err)
+				// block until receive response from replica
+				resp, err := respBuf.ReadString('\n')
+				isError(err)
+				fmt.Printf("In leader mode and sent single synchronous request to %s\nReceived in response: %s\n", connections[0].RemoteAddr(), resp)
+				// send non-blocking async requests to all other replicas
+				for _, c := range connections[1:] {
+					_, err = c.Write(msg)
+					isError(err)
 				}
-				// todo: send to replica
-			} else if args[0] == "get" {
+			}
+			msg := fmt.Sprintf("Successfully set key '%s' with value '%s'\n", key, val)
+			fmt.Printf(msg)
+			conn.Write([]byte(msg))
+		case args[0] == "get":
+			if len(args) != 2 {
+				msg := "Invalid command. Must be of form 'get foo'. Please try again\n"
+				os.Stderr.WriteString(msg)
+				conn.Write([]byte(msg))
+			} else {
 				key := args[1]
 				value, err := Get(key)
 				if err != nil {
@@ -101,10 +127,72 @@ func handleConnection(conn net.Conn) {
 					conn.Write([]byte(msg))
 				}
 			}
+		case args[0] == "promote-to-leader":
+			leadermode = true
+			// promote-to-leader is accompanied by a list of addresses
+			// the first is the address of the replica at which to replicate synchronously
+			// all others receive updates asynchronously
+			for _, addr := range args[1:] {
+				// todo: handle closures of connections more gracefully; deferring in a for-loop may be a resource leak
+				conn, err := net.Dial("tcp", addr)
+				isError(err)
+				defer conn.Close()
+				connections = append(connections, conn)
+			}
+			respBuf = bufio.NewReader(connections[0])
+
+			msg := fmt.Sprintf("promoted to leadermode with connections: %v, respBuf: %p\n", connections, respBuf)
+			fmt.Printf(msg)
+			conn.Write([]byte(msg))
+		case args[0] == "demote-from-leader":
+			if !leadermode {
+				fmt.Printf("received demotion but already not leader")
+				continue
+			}
+			leadermode = false
+			for _, c := range connections {
+				c.Close()
+			}
 		}
+
+		//if len(args) != 2 || (args[0] != "set" && args[0] != "get") {
+		//	msg := "Invalid command. Must be of form 'set foo=bar' or 'get foo'. Please try again\n"
+		//	os.Stderr.WriteString(msg)
+		//	conn.Write([]byte(msg))
+		//}
+		//
+		//if len(args) == 2 {
+		//	if args[0] == "set" {
+		//		kv := strings.Split(args[1], "=")
+		//		key := kv[0]
+		//		val := kv[1]
+		//		err = Set(key, val)
+		//		if err != nil {
+		//			msg := fmt.Sprintf("Failed to set key '%s' with value '%s'. Error: %s\n", key, val, err)
+		//			fmt.Printf(msg)
+		//			conn.Write([]byte(msg))
+		//		} else {
+		//			msg := fmt.Sprintf("Successfully set key '%s' with value '%s'\n", key, val)
+		//			fmt.Printf(msg)
+		//			conn.Write([]byte(msg))
+		//		}
+		//		// todo: send to replica
+		//	} else if args[0] == "get" {
+		//		key := args[1]
+		//		value, err := Get(key)
+		//		if err != nil {
+		//			msg := fmt.Sprintf("Failed to get key '%s'. Error: %s\n", key, err)
+		//			fmt.Printf(msg)
+		//			conn.Write([]byte(msg))
+		//		} else {
+		//			msg := fmt.Sprintf("%s\n", value)
+		//			fmt.Printf(msg)
+		//			conn.Write([]byte(msg))
+		//		}
+		//	}
+		//}
 	}
 }
-
 
 func Set(k string, v string) (err error) {
 	// todo: handle locking the file so other connections can't create race conditions
