@@ -2,8 +2,9 @@
 .idea
 __pycache__
 reading/
+*/gopl.io/
 *Bradfield_networking_3_http.mov
 *infinite_loop_capture.pcapng
 *ml-20m/
-*postgres/
+*/postgres/
 *Designing.DataIntensive.Applications
